@@ -1,0 +1,34 @@
+# Model hyperparameters
+num_epochs              : 1
+seed                    : 42
+
+datasets  :
+  Noise_division_factor : 2
+
+model :
+  name                    : "CNN-RNN"
+  prediction_horizon      : 75
+  prediction_input_size   : 400
+  # Encoder
+  Inception_NumLayers     : 4
+  #Koopman
+  Koopman_prediction_horizon : 20
+  # Decoder
+  RNN_NumLayer            : 2
+
+loss  :
+  Eigen           : False
+  alpha           : 1
+
+# Optimization parameters
+optimizer :
+  name: SGD
+  weight_decay    : 0.00
+  momentum        : 0.00
+
+# Scheduler parameters
+scheduler:
+  name: StepLR
+  learning_rate   : 0.05
+  step_size       : 5
+  gamma           : 0.1 
