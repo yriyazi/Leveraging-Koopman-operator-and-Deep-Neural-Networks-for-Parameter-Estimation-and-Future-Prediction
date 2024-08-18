@@ -1,13 +1,27 @@
 import  os
 import  torch
 import  time
-import  loss
 import  torch.nn    as      nn
 import  pandas      as      pd
 from    torch.optim import  lr_scheduler
 from    tqdm        import  tqdm
+from    loss        import  cacl_loss_Koopman
 
-    
+
+import  subprocess, time
+def check_gpu_temperature(threshold=69):
+    result = subprocess.run(['nvidia-smi', '--query-gpu=temperature.gpu', '--format=csv,noheader,nounits'], 
+                            stdout=subprocess.PIPE, 
+                            stderr=subprocess.PIPE, 
+                            text=True, 
+                            check=True)
+    # Extract the temperature value from the command output
+    gpu_temp = int(result.stdout.strip())
+    # print(f"Current GPU Temperature: {gpu_temp}°C")
+    if gpu_temp >= threshold:
+        time.sleep(6)
+    return gpu_temp
+
 class AverageMeter(object):
     """
     computes and stores the average and current value
@@ -102,7 +116,8 @@ def train(
     sleep_time,
     Validation_save_threshold : float ,
     device                      :str        = 'cuda'    ,
-    if_validation = False
+    if_validation = False,
+    if_lstm:bool = False
     ):
 
     model       = model.to(device)
@@ -149,13 +164,18 @@ def train(
 
 
             prediction_list = torch.zeros(size=[prediction_horizon]).to(device)
-            decoder_hidden, decoder_cell = torch.zeros(size=[2,prediction_input_size],device=device), torch.zeros(size=[2,prediction_input_size],device=device)
-            for i in range(prediction_horizon):
-                # prediction = inception.forward(x)
-                # prediction,(decoder_hidden, decoder_cell) = model.forward(x.unsqueeze(0),decoder_hidden, decoder_cell)#
-                prediction = model.forward(x.unsqueeze(0))#
+            if if_lstm:
+                decoder_hidden, decoder_cell = torch.zeros(size=[2,prediction_input_size],device=device), torch.zeros(size=[2,prediction_input_size],device=device)
+            for index, i in enumerate(range(prediction_horizon)):
+                if if_lstm:
+                    prediction,(decoder_hidden, decoder_cell) = model.forward(x.unsqueeze(0),decoder_hidden, decoder_cell)#
+                else:
+                    prediction = model.forward(x.unsqueeze(0))
                 x =  torch.cat([x[1:],prediction],dim=0)
                 prediction_list[i] = prediction
+
+                if index%10==0:
+                    _ = check_gpu_temperature()
             loss = criterion(prediction_list, y,model.Koopman_operator.weight)
 
             optimizer.zero_grad()
@@ -163,13 +183,15 @@ def train(
             loss.backward()
             # Update model parameters
             optimizer.step()
+            _ = check_gpu_temperature()
 
-            model , loss_2 = loss.cacl_loss_Koopman(
+            model , loss_2 = cacl_loss_Koopman(
                                                         model=model,
                                                         data = data_tensor.unsqueeze(0),
                                                         batch= batch_idx,
                                                         _divition_factr = _divition_factr,
                                                         optimizer=optimizer_koopman)
+            _ = check_gpu_temperature()
                      
             # gradient clipping
             # max_grad_norm = 1.0
@@ -234,14 +256,18 @@ def train(
                     y = data_tensor[(batch_idx+1)*prediction_input_size:(batch_idx+1)*prediction_input_size+prediction_horizon]+((2*torch.rand(size=[prediction_horizon],device=device)-1)/(_divition_factr*2))
 
                     prediction_list = torch.zeros(size=[prediction_horizon]).to(device)
+                if if_lstm:
                     decoder_hidden, decoder_cell = torch.zeros(size=[2,prediction_input_size],device=device), torch.zeros(size=[2,prediction_input_size],device=device)
-                    for i in range(prediction_horizon):
-                        # prediction = inception.forward(x)
-                        # prediction,(decoder_hidden, decoder_cell) = model.forward(x.unsqueeze(0),decoder_hidden, decoder_cell)#
-                        prediction = model.forward(x.unsqueeze(0))#
-                        x =  torch.cat([x[1:],prediction],dim=0)
-                        prediction_list[i] = prediction
+                for i in range(prediction_horizon):
+                    if if_lstm:
+                        prediction,(decoder_hidden, decoder_cell) = model.forward(x.unsqueeze(0),decoder_hidden, decoder_cell)#
+                    else:
+                        prediction = model.forward(x.unsqueeze(0))
+                    x =  torch.cat([x[1:],prediction],dim=0)
+                    prediction_list[i] = prediction
                     loss = criterion(prediction_list, y,model.Koopman_operator.weight)
+                    if index%10==0:
+                        _ = check_gpu_temperature()
 
                     acc1 = 0
                     length = x.shape[0]
