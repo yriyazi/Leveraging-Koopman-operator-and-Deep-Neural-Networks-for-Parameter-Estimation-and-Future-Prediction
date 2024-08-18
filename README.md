@@ -28,10 +28,7 @@ Nonlinear dynamical systems play a crucial role in scientific and engineering ap
 ```
 
 ## Repository Structure
-
-
-plaintext
-
+```
 │   config.yaml
 │   LICENSE
 │   Loader.ipynb
@@ -60,7 +57,7 @@ plaintext
 │   │   structure.py
 │
 └───utils
-
+```
 ## Getting Started
 To get started with using the code and reproducing the results presented in the paper, please refer to the `Train.ipynb` file.
 
