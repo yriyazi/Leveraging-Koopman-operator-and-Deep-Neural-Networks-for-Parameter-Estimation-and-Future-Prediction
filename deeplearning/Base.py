@@ -67,6 +67,8 @@ def save_model(file_path, file_name, model, optimizer=None):
 
     if optimizer is not None:
         state_dict["optimizer"] = optimizer.state_dict()
+    if not os.path.isdir(file_path):
+        os.mkdir(file_path)
     torch.save(state_dict, os.path.join(file_path, file_name))
 
 
