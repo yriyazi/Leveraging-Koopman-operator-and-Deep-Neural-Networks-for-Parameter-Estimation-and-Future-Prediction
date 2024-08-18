@@ -44,7 +44,6 @@ Nonlinear dynamical systems play a crucial role in scientific and engineering ap
 │   │   Base.py
 │   │   README.md
 │
-
 ├───loss
 │   │   Koopman_repeat.py
 │   │   loss_function.py
@@ -66,9 +65,9 @@ To get started with using the code and reproducing the results presented in the 
 
 If you find this work useful, please consider citing our paper:
 
-```
+<!-- ```
 [Yassin Riyazi, Navidreza Ghanbari, Arash Bahrami* 2024. Leveraging Koopman Operator and Deep Neural Networks for Parameter Estimation and Future Prediction of Duffing Oscillators. Journal of Theoretical and Applied Vibration and Acoustics (TAVA)]
-```
+``` -->
 
 ```
 @article{riyazi2024leveraging,
